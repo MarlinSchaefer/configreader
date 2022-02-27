@@ -1,0 +1,6 @@
+numpy>=1.22
+
+[testing]
+pytest>=6.2
+flake8>=4.0
+tox>=3.24

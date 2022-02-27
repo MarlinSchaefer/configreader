@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+src/configreader/__init__.py
+src/configreader/core.py
+src/configreader.egg-info/PKG-INFO
+src/configreader.egg-info/SOURCES.txt
+src/configreader.egg-info/dependency_links.txt
+src/configreader.egg-info/not-zip-safe
+src/configreader.egg-info/requires.txt
+src/configreader.egg-info/top_level.txt
