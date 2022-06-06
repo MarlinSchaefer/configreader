@@ -7,9 +7,9 @@ values from the config-file.
 
 ## Install
 Clone the contents of this repository
-`git clone https://github.com/MarlinSchaefer/configreader.git`
-and install it using pip
-`pip install .`
+```git clone https://github.com/MarlinSchaefer/configreader.git```
+and install it using pip (without changing the directory)
+```pip install ./configreader```
 
 ## Usage
 This config reader is based on the `ConfigParser` from the Python standard
