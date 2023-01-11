@@ -1,5 +1,7 @@
 import ast
 import math
+import io
+import os
 from collections import OrderedDict
 from configparser import ConfigParser
 
@@ -309,7 +311,7 @@ class ExpressionString(object):
         """
         tree = ast.parse(string)
         return self.parse_node(tree)
-    
+
     def __call__(self, string):
         return self.parse(string)
 
@@ -907,7 +909,12 @@ class ConfigReader(Section):
         self.es = ExpressionString()
         parser = ConfigParser()
         for fpath in filepaths:
-            parser.read(fpath)
+            if isinstance(fpath, io.IOBase):
+                parser.read_file(fpath)
+            elif os.path.exists(fpath):
+                parser.read(fpath)
+            else:
+                parser.read_string(fpath)
         sections = parser.sections()
         if const_sec in sections:
             for key, val in parser[const_sec].items():
