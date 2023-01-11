@@ -736,21 +736,36 @@ class Section(object):
             The object or section that was retrieved.
         """
         if self.sep not in key:
-            vals, n = self.find_values(key, squeeze=True)
+            vals, n = self.find_values(key, squeeze=False)
             secs = self.find_subsections(key)
-            secs = [self.get_from_path(sec) for sec in secs]
+            secs = [self.get_from_path(sec + self.sep) for sec in secs]
+            for sec in secs:
+                keypath = self.sep.join(sec.full_path.split(self.sep)[:-1])
+                keypath += '/'
+                vals[keypath] = sec
             total = n + len(secs)
             if total == 0:
                 raise MissingKeyError(f'No value or section with key {key}.')
             if total > 1:
-                raise NonUniqueKeyError('Found multiple values: '
-                                        f'{list(vals.values())} and '
-                                        'sections: '
-                                        f'{[sec.full_path for sec in secs]}')
+                direct_children = {}
+                for keypth, val in vals.items():
+                    if keypth.endswith('/') and keypth[:-1] == self.full_path:
+                        direct_children[keypath] = val
+                    elif keypth == self.full_path:
+                        direct_children[keypth] = val
+                    
+                if len(direct_children) > 1 or len(direct_children) == 0:
+                    err_sec = [sec.full_path for sec in secs]
+                    raise NonUniqueKeyError('Found multiple values: '
+                                            f'{list(vals.values())} and '
+                                            'sections: '
+                                            f'{err_sec}')
+                else:
+                    vals = direct_children
             if n == 0:
                 return secs[0]
             else:
-                return vals
+                return next(iter(vals.values()))
         else:
             key = self.expand_sublevel(key)
             return self.get_from_path(key)
