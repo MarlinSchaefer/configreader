@@ -309,7 +309,10 @@ class ExpressionString(object):
         function should then handle the conversion from ast-object to Python
         object.
         """
-        tree = ast.parse(string)
+        try:
+            tree = ast.parse(string)
+        except SyntaxError:
+            return string
         return self.parse_node(tree)
 
     def __call__(self, string):
@@ -577,7 +580,7 @@ class Section(object):
                 return section
             if len(parts) == 0:
                 if name in section.content:
-                    return section.content[name]
+                    return self.parse(section.content[name])
                 elif name in section.subsections:
                     return section.subsections[name]
                 else:
@@ -765,7 +768,7 @@ class Section(object):
             if n == 0:
                 return secs[0]
             else:
-                return next(iter(vals.values()))
+                return self.parse(next(iter(vals.values())))
         else:
             key = self.expand_sublevel(key)
             return self.get_from_path(key)
@@ -799,15 +802,17 @@ class Section(object):
             ret[sec] = section.to_dict(from_toplevel=False)
         return ret
     
-    def get_lines(self, level=0):
+    def get_lines(self, level=0, parse=None):
         """Recursive helper function to print the Section.
         """
+        if parse is None:
+            parse = self.parse
         ret = [(self.name + self.sep, level)]
         for sec in self.sections():
             section = self.subsections[sec]
-            ret.extend(section.get_lines(level=level+1))
+            ret.extend(section.get_lines(level=level+1, parse=parse))
         for key, val in self.content.items():
-            ret.append((f'{key} = {val}', level+1))
+            ret.append((f'{key} = {parse(val)}', level+1))
         return ret
     
     def __str__(self):
@@ -839,6 +844,19 @@ class Section(object):
         ret = f'{lines[0][0]}\n'
         ret += '\n'.join([''.join(pt).rstrip() for pt in to_print])
         return ret
+
+    def parse(self, val):
+        return val
+    
+    def to_parser(self, parser):
+        path = self.full_path
+        path = self.sep.join(path.split(self.sep)[1:])
+        if len(path) > 0:
+            parser.add_section(path)
+        for key, val in self.content.items():
+            parser.set(path, key, val)
+        for section in self.subsections.values():
+            section.to_parser(parser)
 
 
 class ConfigReader(Section):
@@ -939,4 +957,12 @@ class ConfigReader(Section):
             secname = self.sep + sec
             section = section.add_subsection(secname)
             for key, val in parser[sec].items():
-                section[key] = self.es.parse(val)
+                section[key] = val
+    
+    def parse(self, val):
+        return self.es.parse(val)
+    
+    def write(self, fp, space_around_delimiters=True):
+        parser = ConfigParser()
+        self.to_parser(parser)
+        parser.write(fp, space_around_delimiters=space_around_delimiters)
